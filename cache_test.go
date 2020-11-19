@@ -14,6 +14,7 @@ import (
 	hashicorp "github.com/hashicorp/golang-lru"
 	koding "github.com/koding/cache"
 	"github.com/muesli/cache2go"
+	cmap "github.com/orcaman/concurrent-map"
 	cache "github.com/patrickmn/go-cache"
 )
 
@@ -44,6 +45,7 @@ func BenchmarkCache(b *testing.B) {
 		b.Run(fmt.Sprintf("BigCache-%d", n), benchmarkBigCache)
 		b.Run(fmt.Sprintf("Ristretto-%d", n), benchmarkRistretto)
 		b.Run(fmt.Sprintf("SyncMap-%d", n), benchmarkSyncMap)
+		b.Run(fmt.Sprintf("ConcurrentMap-%d", n), BenchmarkConcurrentMap)
 		fmt.Println()
 	}
 
@@ -236,6 +238,25 @@ func benchmarkSyncMap(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			value, found := m.Load(toKey(i))
+			if found {
+				_ = value
+			}
+		}
+	})
+}
+
+func BenchmarkConcurrentMap(b *testing.B) {
+	var m = cmap.New()
+
+	b.Run("Set", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			m.Set(toKey(i), testStr)
+		}
+	})
+
+	b.Run("Get", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			value, found := m.Get(toKey(i))
 			if found {
 				_ = value
 			}
